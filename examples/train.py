@@ -3,6 +3,7 @@ import os
 import numpy as np
 from time import sleep
 from argparse import ArgumentParser
+from shopty import shopt_parser
 
 
 def load_from_ckpt(path):
@@ -15,11 +16,8 @@ def load_from_ckpt(path):
 
 if __name__ == "__main__":
 
-    ap = ArgumentParser()
+    ap = shopt_parser()
 
-    ap.add_argument("--experiment_dir")
-    ap.add_argument("--max_iter", type=int, required=True)
-    ap.add_argument("--load_from_ckpt", action="store_true")
     ap.add_argument("--random_seed", type=float)
 
     args, unknown = ap.parse_known_args()

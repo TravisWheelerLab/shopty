@@ -6,4 +6,4 @@ __version__ = "0.0.1"
 from .experiments import *
 from .supervisors import *
 from .params import *
-from .optimize import *
+from .optimizers import *

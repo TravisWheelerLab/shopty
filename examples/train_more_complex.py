@@ -6,6 +6,7 @@ import pytorch_lightning as pl
 from pl_examples.basic_examples.mnist_datamodule import MNISTDataModule
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
+from shopty import shopt_parser
 
 
 class LitClassifier(pl.LightningModule):
@@ -65,13 +66,8 @@ class LitClassifier(pl.LightningModule):
 
 
 if __name__ == "__main__":
-
-    ap = ArgumentParser()
-    ap.add_argument("--experiment_dir")
-    ap.add_argument("--max_iter", type=int, required=True)
-    ap.add_argument("--load_from_ckpt", action="store_true")
+    ap = shopt_parser()
     ap.add_argument("--learning_rate", type=float)
-
     args = ap.parse_args()
 
     dm = MNISTDataModule(batch_size=1024)
