@@ -61,16 +61,35 @@ Scheduling algorithms like `hyperband` use the <value after running training> to
 I've already figured out the code for this for [pytorch lightning](https://www.pytorchlightning.ai/) (PTL).
 I highly recommend using PTL, as it does a lot of useful things for you under the hood.
 
+### How to define hyperparameters
 
+We use a .yaml file to define hyperparameters for training models as well as other commands you want to run to set up
+the training environment.
+The .yaml file must have the following structure:
 
-### Hyperband (or related stop-and-start tuning algorithms)
-If using the `hyperband` tuning algorithm the supervisor continues running performant experiments and throws
-away bad ones. Each experiment saves its current state in its working directory. To continue the job, the supervisor
-calls the experiment again with the `--load_from_ckpt` flag set. The experiment must know
-how to handle this flag and perform the corresponding reloading-from-checkpoint logic.
+```yaml
 
-### Random
-If using the `random` tuning algorithm the supervisor just submits the number you choose and then exits.
-It's up to you to monitor the spawned jobs after that.
+project_name: 'your_project_name'
+run_command: "python3 my_cool_script.py"
+project_dir: "~/deep_thought/"
+max_epochs: 20
+
+hparams:
+  learning_rate:
+    begin: -10
+    end: -1
+    random: True
+    log: True
+  your_custom_hparam:
+    begin: 1
+    end: 5
+
+slurm_directives:
+  - "--partition=gpu"
+  - "--gres=gpu:1"
+
+environment_commands:
+  - "conda activate my_env"
+```
 
 
