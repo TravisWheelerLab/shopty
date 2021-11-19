@@ -3,7 +3,7 @@ import subprocess
 import numpy as np
 from random import shuffle
 
-from .params import Config
+from .params import Config, HyperRange
 
 
 class SlurmExperiment:

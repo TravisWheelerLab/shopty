@@ -1,15 +1,52 @@
 import os
 import numpy as np
 import time
+from .params import Config
+from .experiments import ExperimentGenerator
 
 
-class CPUSupervisor:
-    def __init__(self, experiment_generator, project_directory, poll_interval=0.1):
+def _validate_project_dir(project_dir):
+    if os.path.isdir(project_dir):
+        old_dir = project_dir
+        project_dir_base = project_dir + "_{}"
+        i = 0
+        project_dir = project_dir_base.format(i)
+        while os.path.isdir(project_dir):
+            i += 1
+            project_dir = project_dir_base.format(i)
+        print(f"Experiment directory {old_dir} already"
+              f"exists. Running experiments in {project_dir} instead.")
+    return project_dir
 
+
+
+class Supervisor:
+
+    def __init__(self,
+                 project_directory,
+                 poll_interval,
+                 overwrite=False):
         self.poll_interval = poll_interval
-        self.file_to_process = {}
         self.project_directory = project_directory
-        self.experiment_generator = experiment_generator
+        if not overwrite:
+            self.project_directory = _validate_project_dir(self.project_directory)
+
+
+class CPUSupervisor(Supervisor):
+
+    def __init__(self,
+                 config_file,
+                 project_directory,
+                 overwrite=False,
+                 poll_interval=10):
+
+        super(CPUSupervisor, self).__init__(project_directory,
+                                            poll_interval,
+                                            overwrite)
+
+        self.hparams = Config(config_file)
+        self.file_to_process = {}
+        self.experiment_generator = ExperimentGenerator(self.hparams, 'bash')
         self.running_experiments = []
         self.experiment_id = 0
 
@@ -58,20 +95,35 @@ class CPUSupervisor:
         for experiment in self.running_experiments:
             experiment.max_iter = max_iter
             experiment.resubmit_cmd = "load_from_ckpt"
-            # TODO.. fix this.
-            experiment.submit(self.experiment_generator.hparams)
+            experiment.submit(self.hparams)
 
 
-class SlurmSupervisor:
+class SlurmSupervisor(Supervisor):
+
     def __init__(
-        self, experiment_generator, project_directory, poll_interval=0.1, monitor="min"
+        self,
+            config_file,
+            project_directory,
+            overwrite=False,
+            poll_interval=0.1,
+            monitor="min"
     ):
+        super(SlurmSupervisor, self).__init__(project_directory,
+                                              poll_interval,
+                                              overwrite)
+
+        if monitor not in ('max', 'min'):
+            raise ValueError('monitor must be one of <max, min>, '
+                             f'got {monitor}')
+
+        self.hparams = Config(config_file)
 
         self.poll_interval = poll_interval
         self.file_to_process = {}
         self.project_directory = project_directory
         self.monitor = monitor
-        self.experiment_generator = experiment_generator
+        self.experiment_generator = ExperimentGenerator(self.hparams,
+                                                        experiment_type='slurm')
         self.running_experiments = []
         self.experiment_id = 0
 
@@ -123,5 +175,4 @@ class SlurmSupervisor:
         for experiment in self.running_experiments:
             experiment.max_iter = max_iter
             experiment.resubmit_cmd = "load_from_ckpt"
-            # TODO.. fix this.
-            experiment.submit(self.experiment_generator.hparams)
+            experiment.submit(self.hparams)
