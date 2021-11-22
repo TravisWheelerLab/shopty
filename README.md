@@ -68,7 +68,6 @@ the training environment.
 The .yaml file must have the following structure:
 
 ```yaml
-
 project_name: 'your_project_name'
 run_command: "python3 my_cool_script.py"
 project_dir: "~/deep_thought/"

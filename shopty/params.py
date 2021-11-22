@@ -15,7 +15,6 @@ def shopt_parser():
     return ap
 
 
-
 class HyperRange:
     """
     An object for sampling from ranges of hyperparameters.
