@@ -7,12 +7,10 @@ def _many_or_one(p):
 
 def random(supervisor, n_trials, max_iter):
     for exp in range(n_trials):
-        supervisor.submit_new_experiment(experiment_directory=exp, max_iter=max_iter)
+        supervisor.submit_new_experiment(experiment_directory="", max_iter=max_iter)
 
 
-def hyperband(supervisor):
-    max_iter = 100  # maximum iterations / epochs per configuration
-    eta = 3  # defines downsampling rate (default=3)
+def hyperband(supervisor, max_iter=81, eta=3, n_max=None):
     logeta = lambda x: np.log(x) / np.log(eta)
     s_max = int(
         logeta(max_iter)
@@ -25,6 +23,8 @@ def hyperband(supervisor):
         n = int(
             np.ceil(B / max_iter / (s + 1)) * eta ** s
         )  # initial number of configurations
+        if n_max is not None:
+            n = n_max
         r = int(
             max_iter * eta ** (-s)
         )  # initial number of iterations to run configurations for

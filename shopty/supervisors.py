@@ -8,39 +8,38 @@ from .experiments import ExperimentGenerator
 def _validate_project_dir(project_dir):
     if os.path.isdir(project_dir):
         old_dir = project_dir
-        project_dir_base = project_dir + "_{}"
+        if project_dir[-1] == os.path.sep:
+            project_dir_base = project_dir[:-1] + "_{}"
+        else:
+            project_dir_base = project_dir + "_{}"
         i = 0
         project_dir = project_dir_base.format(i)
         while os.path.isdir(project_dir):
             i += 1
             project_dir = project_dir_base.format(i)
-        print(f"Experiment directory {old_dir} already "
-              f"exists. Running experiments in {project_dir} instead.")
+        print(
+            f"Experiment directory {old_dir} already "
+            f"exists. Running experiments in {project_dir} instead."
+        )
     return project_dir
 
 
 class Supervisor:
-
-    def __init__(self,
-                 config_file,
-                 poll_interval,
-                 monitor,
-                 time_limit_seconds=None,
-                 overwrite=False):
+    def __init__(self, config_file, time_limit_seconds=None, overwrite=False):
 
         self.hparams = Config(config_file)
 
-        self.poll_interval = poll_interval
+        self.poll_interval = self.hparams.poll_interval
         self.project_directory = self.hparams.project_dir
         self.time_limit_seconds = time_limit_seconds
+        self.monitor = self.hparams.monitor
 
         if not overwrite:
             self.project_directory = _validate_project_dir(self.project_directory)
 
-        if monitor not in ('max', 'min'):
+        if self.monitor not in ("max", "min"):
             raise ValueError(f"monitor must be one of <max, min>, got {monitor}")
 
-        self.monitor = monitor
         self.running_experiments = []
         self.experiment_id = 0
 
@@ -69,13 +68,15 @@ class Supervisor:
                 losses.append(float(result))
 
         if bad_experiments == len(self.running_experiments):
-            print("No experiment wrote to a results file. Check that you're using"
-                  " shopty-defined variables when writing to results file and check your script for errors.")
+            print(
+                "No experiment wrote to a results file. Check that you're using"
+                " shopty-defined variables when writing to results file and check your script for errors."
+            )
             exit(1)
 
         indices = np.argsort(losses)  # smallest metric first
 
-        if self.monitor == 'max':
+        if self.monitor == "max":
             indices = indices[::-1]
 
         self.running_experiments = [
@@ -88,12 +89,12 @@ class Supervisor:
 
 
 class CPUSupervisor(Supervisor):
-
     def __init__(self, *args, **kwargs):
         super(CPUSupervisor, self).__init__(*args, **kwargs)
 
-        self.experiment_generator = ExperimentGenerator(self.hparams,
-                                                        experiment_type='bash')
+        self.experiment_generator = ExperimentGenerator(
+            self.hparams, experiment_type="bash"
+        )
 
     def submit_new_experiment(self, experiment_directory, max_iter):
         experiment_dir = os.path.join(
@@ -108,16 +109,18 @@ class CPUSupervisor(Supervisor):
 
 
 class SlurmSupervisor(Supervisor):
-
     def __init__(self, *args, **kwargs):
         super(SlurmSupervisor, self).__init__(*args, **kwargs)
 
-        self.experiment_generator = ExperimentGenerator(self.hparams,
-                                                        experiment_type='slurm')
+        self.experiment_generator = ExperimentGenerator(
+            self.hparams, experiment_type="slurm"
+        )
 
     def submit_new_experiment(self, experiment_directory, max_iter):
         experiment_dir = os.path.join(
-            self.project_directory, experiment_directory, f"exp_{self.experiment_id}"
+            self.project_directory,
+            str(experiment_directory),
+            f"exp_{self.experiment_id}",
         )
 
         exp = self.experiment_generator.submit_new_experiment(

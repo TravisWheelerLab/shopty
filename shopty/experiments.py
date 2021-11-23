@@ -8,13 +8,14 @@ from .params import Config, HyperRange, ShoptyConfig
 
 
 class BaseExperiment:
-
-    def __init__(self,
-                 run_command=None,
-                 project_name=None,
-                 environment_commands=None,
-                 experiment_dir=None,
-                 experiment_hyperparameters=None):
+    def __init__(
+        self,
+        run_command=None,
+        project_name=None,
+        environment_commands=None,
+        experiment_dir=None,
+        experiment_hyperparameters=None,
+    ):
 
         self.run_command = run_command
         self.project_name = project_name
@@ -27,7 +28,9 @@ class BaseExperiment:
         self.script_path = None
 
         self.shopty_config = ShoptyConfig()
-        self.results_file = os.path.join(self.experiment_dir, self.shopty_config.results_file)
+        self.results_file = os.path.join(
+            self.experiment_dir, self.shopty_config.results_file
+        )
         self.checkpoint_dir = os.path.join(self.experiment_dir, "checkpoints")
 
         os.makedirs(self.experiment_dir, exist_ok=True)
@@ -37,7 +40,7 @@ class BaseExperiment:
             f"{self.shopty_config.results_envvar}": f"{self.results_file}",
             f"{self.shopty_config.experiment_envvar}": f"{self.experiment_dir}",
             f"{self.shopty_config.checkpoint_dir_envvar}": f"{self.checkpoint_dir}",
-            f"{self.shopty_config.checkpoint_file_envvar}": f"{os.path.join(self.experiment_dir, 'checkpoints', 'last.ckpt')}"
+            f"{self.shopty_config.checkpoint_file_envvar}": f"{os.path.join(self.experiment_dir, 'checkpoints', 'last.ckpt')}",
         }
 
     @property
@@ -58,12 +61,13 @@ class BaseExperiment:
         return " ".join(args)
 
     def completed(self):
-        raise NotImplementedError("Classes inheriting from BaseExperiment must implement the"
-                                  " `completed` method")
+        raise NotImplementedError(
+            "Classes inheriting from BaseExperiment must implement the"
+            " `completed` method"
+        )
 
 
 class SlurmExperiment(BaseExperiment):
-
     def __init__(self, experiment_id, slurm_directives, **kwargs):
 
         super(SlurmExperiment, self).__init__(**kwargs)
@@ -136,9 +140,7 @@ class SlurmExperiment(BaseExperiment):
                 sub_commands.extend(command)
 
         for envvar, value in self.shopty_environment_mappings.items():
-            command = [
-                f"export {envvar}={value}\n"
-            ]
+            command = [f"export {envvar}={value}\n"]
             sub_commands.extend(command)
 
         # create the max_iter environment command
@@ -159,7 +161,6 @@ class SlurmExperiment(BaseExperiment):
 
 
 class BashExperiment(BaseExperiment):
-
     def __init__(self, **kwargs):
         super(BashExperiment, self).__init__(**kwargs)
         self.process = None
@@ -176,11 +177,14 @@ class BashExperiment(BaseExperiment):
     def submit(self, max_iter):
         script_path = self._create_bash_script()
         stdout_path = os.path.join(self.experiment_dir, "log_file.stdout")
-        self.shopty_environment_mappings[self.shopty_config.max_iter_envvar] = str(max_iter)
+        self.shopty_environment_mappings[self.shopty_config.max_iter_envvar] = str(
+            max_iter
+        )
         # env: copy the current environment and add the custom shopty env. mappings
         self.process = subprocess.Popen(
-            f"bash {script_path} >> {stdout_path} 2>&1", shell=True,
-            env=dict(os.environ, **self.shopty_environment_mappings)
+            f"bash {script_path} >> {stdout_path} 2>&1",
+            shell=True,
+            env=dict(os.environ, **self.shopty_environment_mappings),
         )
         return self.process.pid
 
@@ -283,7 +287,8 @@ class ExperimentGenerator:
                 project_name=self.hparams.project_name,
                 environment_commands=self.hparams.environment_commands,
                 experiment_dir=experiment_dir,
-                experiment_hyperparameters=sampled_params)
+                experiment_hyperparameters=sampled_params,
+            )
 
             exp.submit(max_iter)
 
@@ -293,7 +298,8 @@ class ExperimentGenerator:
                 project_name=self.hparams.project_name,
                 environment_commands=self.hparams.environment_commands,
                 experiment_dir=experiment_dir,
-                experiment_hyperparameters=sampled_params)
+                experiment_hyperparameters=sampled_params,
+            )
             exp.submit(max_iter)
 
         else:

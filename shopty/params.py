@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 class ShoptyConfig:
 
     experiment_envvar = "SHOPTY_EXPERIMENT_DIR"
-    results_file = 'results.txt'
+    results_file = "results.txt"
     results_envvar = "SHOPTY_RESULTS_FILE"
 
     checkpoint_dir_envvar = "SHOPTY_CHECKPOINT_DIR"
@@ -38,14 +38,26 @@ class ShoptyConfig:
 
 def shopt_parser():
     ap = ArgumentParser()
-    ap.add_argument("--experiment_dir", required=True,
-                    type=str, help='directory in which to run the experiment')
-    ap.add_argument("--max_iter", type=int, required=True,
-                    help='number of steps to run the experiment for')
-    ap.add_argument("--load_from_ckpt", action="store_true",
-                    help='whether or not to load the model/training state from'
-                         '--experiment_dir/checkpoints/')
+    ap.add_argument(
+        "--experiment_dir",
+        required=True,
+        type=str,
+        help="directory in which to run the experiment",
+    )
+    ap.add_argument(
+        "--max_iter",
+        type=int,
+        required=True,
+        help="number of steps to run the experiment for",
+    )
+    ap.add_argument(
+        "--load_from_ckpt",
+        action="store_true",
+        help="whether or not to load the model/training state from"
+        "--experiment_dir/checkpoints/",
+    )
     return ap
+
 
 # TODO:
 # Add loggers and reloading from checkpoint.
