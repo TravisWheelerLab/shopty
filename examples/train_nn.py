@@ -82,10 +82,7 @@ if __name__ == "__main__":
     dm = MNISTDataModule(batch_size=1024)
 
     checkpoint_callback = ModelCheckpoint(
-        dirpath=checkpoint_dir,
-        save_last=True,
-        save_top_k=0,
-        verbose=True
+        dirpath=checkpoint_dir, save_last=True, save_top_k=0, verbose=True
     )
 
     model = LitClassifier(learning_rate=args.learning_rate)
@@ -97,8 +94,9 @@ if __name__ == "__main__":
         # This is a weird workaround, but comes from an error in PTL not
         # setting the model's current epoch.
         last_epoch = checkpoint["epoch"]
-        model = model.load_from_checkpoint(checkpoint_file,
-                                           map_location=torch.device("cuda"))
+        model = model.load_from_checkpoint(
+            checkpoint_file, map_location=torch.device("cuda")
+        )
 
     # This is because the tensorboard logger will log to experiment_dir/lightning_logs/
     # if you don't explicity set the name and version to empty strings
@@ -111,12 +109,14 @@ if __name__ == "__main__":
         logger=logger,
         callbacks=[checkpoint_callback],
         log_every_n_steps=1,
-        gpus=1
+        gpus=1,
     )
 
-    trainer.fit(model,
-                ckpt_path=checkpoint_file if os.path.isfile(checkpoint_file) else None,
-                datamodule=dm)
+    trainer.fit(
+        model,
+        ckpt_path=checkpoint_file if os.path.isfile(checkpoint_file) else None,
+        datamodule=dm,
+    )
 
     results = trainer.test(model, datamodule=dm)[0]
     # >>> print(results)

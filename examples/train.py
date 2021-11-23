@@ -45,8 +45,8 @@ if __name__ == "__main__":
         print(f"{i+1}: {start}")
         i += 1
 
-    with open(checkpoint_file, 'w') as dst:
+    with open(checkpoint_file, "w") as dst:
         dst.write(f"{start}:{increment}")
 
-    with open(result_file, 'w') as dst:
+    with open(result_file, "w") as dst:
         dst.write(f"{start}:{increment}")

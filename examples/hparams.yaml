@@ -1,7 +1,8 @@
 project_name: 'test'
-run_command: "python3 /home/tc229954/share/shopty/examples/train_more_complex_model.py"
-project_dir: "/tmp/jobname/"
-max_epochs: 20
+run_command: "python3 /home/tc229954/share/shopty/examples/train_nn.py"
+project_dir: "jobname/"
+monitor: "max"
+poll_interval: 10
 
 hparams:
   learning_rate:
@@ -15,6 +16,6 @@ slurm_directives:
   - "--gres=gpu:1"
 
 environment_commands:
-  - "echo $PWD"
-  - "source ~/anaconda/bin/activate"
-  - "conda activate beetles"
+  - 'source ~/anaconda/bin/activate'
+  - 'conda activate beetles'
+
