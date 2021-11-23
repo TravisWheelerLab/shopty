@@ -4,64 +4,57 @@
 
 # Simple Hyperparameter OPTimization in pYthon
 
-### Install via pip
-```bash
-pip install shopty
-```
-### Install from source
+### Install from source (recommended)
 ```bash
 git clone https://github.com/colligant/shopty
 # optional: pip install flit
 cd shopty && flit install
 ```
+### Install via pip
+```bash
+pip install shopty
+```
+### hyperband on a slurm cluster
+```bash
+shopty hyperband --config_file my_config.yaml --supervisor slurm
+```
+### run 20 random hyperparameter configs each for 100 iterations
+```bash
+shopty random --config_file my_config.yaml --supervisor slurm --max_iter 100 --n_experiments 20
+```
+
+A non-cli example is [here](./examples/optim.py).
 
 ### What is the purpose of this tool?
 
 Lots of other hyperparameter tuning libraries (at least the ones I've found, anyways)
-require modifying a bunch of source code and make assumptions about your running environment. 
+require modifying a bunch of source code and make assumptions about your deployment environment.
 
-shopty is a simple library to tune hyperparameters either on your personal computer or a slurm-managed 
+`shopty` is a simple library to tune hyperparameters either on your personal computer or a slurm-managed 
 cluster that requires minimal code changes and uses a simple config file to do hyperparameter sweeps.
 
 ### Design
 The `Supervisor` classes in `shopty` spawn (if on CPU) or submit (if on slurm) different experiments, each
-with their own set of hyperparameters. Submissions are done within python by using `subprocess.call`. 
+with their own set of hyperparameters. Submissions are done within python by creating a bash or sbatch file and
+submitting it via `subprocess.call`. 
 
-Each experiment writes a "checkpoint.txt" file to a directory assigned to it. The `Supervisor` class detects when each
-experiment is done running and reads the "checkpoint.txt" file for the outcome of the experiment that wrote it.
+Each experiment writes a "results.txt" after its finished to a unique directory. The `Supervisor` class detects when each
+experiment is done and reads the "results.txt" file for the outcome of the experiment that wrote it.
 
 ### Source code modifications
 
 See a simple example [here](./examples/train.py). A neural network example is
-[here](./examples/train_more_complex.py).
+[here](./examples/train_nn.py).
 
-Your training script must accept hyperparameters and a few shopty-specific variables as command-line arguments.
-The shopty-specific args are accessible via
-```python
-from shopty import shopt_parser
-argument_parser = shopt_parser()
-```
-and contain
+Supervisors communicate with experiments via environment variables. Your custom training code must know how to deal with
+some shopty-specific use cases. In particular, it must a) run the code for `max_iter` iterations, b) reload the training 
+state from a checkpoint file, and c) write the result post-training to a results file. The `max_iter` variable is an
+experiment-specific environment variable, as is the checkpoint file's name and the results file's name.
 
-```bash
---experiment_dir directory in which to run the experiment
---max_iter number of steps to run the experiment for
---load_from_ckpt whether or not to load the model/training state from <experiment_dir>/checkpoints/
-```
-Your code must know how to deal with all of these arguments.
-When `--load_from_ckpt` is set, your training script must look for the most recent saved checkpoint in
-`--experiment_dir/checkpoints/` and resume training from that state.
-
-`--max_iter` is always going to be set - this is the number of steps to run your model for.
-`--experiment_dir` is where the checkpoints are saved and where 'checkpoint.txt' is saved.
-'checkpoint.txt' should contain one line that looks like this: 
-`<your_metric_name_here>:<value after running training>`
-Scheduling algorithms like `hyperband` use the <value after running training> to cull or keep experiments.
-
-I've already figured out the code for this for [pytorch lightning](https://www.pytorchlightning.ai/) (PTL).
+I've already written the code for this for [pytorch lightning](https://www.pytorchlightning.ai/) (PTL).
 I highly recommend using PTL, as it does a lot of useful things for you under the hood.
 
-### How to define hyperparameters
+### How to define hyperparameters and slurm directives
 
 We use a .yaml file to define hyperparameters for training models as well as other commands you want to run to set up
 the training environment.
@@ -71,7 +64,8 @@ The .yaml file must have the following structure:
 project_name: 'your_project_name'
 run_command: "python3 my_cool_script.py"
 project_dir: "~/deep_thought/"
-max_epochs: 20
+monitor: "max"
+poll_interval: 10
 
 hparams:
   learning_rate:
@@ -82,6 +76,13 @@ hparams:
   your_custom_hparam:
     begin: 1
     end: 5
+    step: 1 
+  another_custom_hparam:
+    begin: 1
+    end: 5
+    random: True
+  a_static_hparam:
+    value: 1e-10
 
 slurm_directives:
   - "--partition=gpu"
@@ -90,5 +91,34 @@ slurm_directives:
 environment_commands:
   - "conda activate my_env"
 ```
+#### run_command
 
+The `run_command` is how shopty runs your program. Generated hyperparameters are passed in to the `run_command` via the
+command line in no particular order. For example, if you want to tune the learning rate of the model
+in `my_cool_script.py`, `my_cool_script.py` must accept a `--learning_rate <learning_rate>` argument.
 
+Notice how the `hparams` header has two levels of indentation: one for the name of hyperparameter, and the next for the
+beginning and end of the range over which to sample from. There are three required elements for each hparam:
+`begin, end, and <random or step>`. The hyperparameter can either be sampled randomly between the interval `[begin, end)`
+or iterated over from `begin` to `end` with step `step`. Binary variables can be added to the project with
+```yaml
+hparams:
+  binary_indicator:
+    begin: 0
+    end: 2
+    step: 1
+```
+Static variables can be added via
+```yaml
+hparams:
+  my_static_var:
+    value: 'load_directory'
+```
+
+#### Slurm directives
+Slurm scripts have headers that specify what resources a program will use (`#SBATCH` statements). Add these
+to each experiment by editing the `slurm_directives` section of the yaml file. They will be added as `#SBATCH` statements
+in each slurm submission script.
+
+#### Environment commands
+These are arbitrary commands that you want to run before the `run_command` is called in the generated script.
