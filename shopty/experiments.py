@@ -1,32 +1,76 @@
 import os
 import subprocess
+
 import numpy as np
 from random import shuffle
 
-from .params import Config, HyperRange
+from .params import Config, HyperRange, ShoptyConfig
 
 
-class SlurmExperiment:
-    def __init__(self, experiment_dir, max_iter, experiment_id, **hparams):
+class BaseExperiment:
+
+    def __init__(self,
+                 run_command=None,
+                 project_name=None,
+                 environment_commands=None,
+                 experiment_dir=None,
+                 experiment_hyperparameters=None):
+
+        self.run_command = run_command
+        self.project_name = project_name
+        self.environment_commands = environment_commands
+        self.experiment_hyperparameters = experiment_hyperparameters
 
         self.experiment_dir = experiment_dir
-        self.hparams = hparams
-        self.experiment_id = experiment_id
-        self.max_iter = max_iter
-        self.hparams["max_iter"] = max_iter
+
         self.resubmit_cmd = None
-        self.slurm_jobid = None
+        self.script_path = None
+
+        self.shopty_config = ShoptyConfig()
+        self.results_file = os.path.join(self.experiment_dir, self.shopty_config.results_file)
+        self.checkpoint_dir = os.path.join(self.experiment_dir, "checkpoints")
+
         os.makedirs(self.experiment_dir, exist_ok=True)
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
+
+        self.shopty_environment_mappings = {
+            f"{self.shopty_config.results_envvar}": f"{self.results_file}",
+            f"{self.shopty_config.experiment_envvar}": f"{self.experiment_dir}",
+            f"{self.shopty_config.checkpoint_dir_envvar}": f"{self.checkpoint_dir}",
+            f"{self.shopty_config.checkpoint_file_envvar}": f"{os.path.join(self.experiment_dir, 'checkpoints', 'last.ckpt')}"
+        }
+
+    @property
+    def result(self):
+        if os.path.isfile(self.results_file):
+            with open(self.results_file, "r") as src:
+                step, loss = src.read().split(":")
+            return loss
+        else:
+            return None
 
     def __str__(self):
-        # TODO: this seems hacky for resubmitting
         args = []
-        for k, v in self.hparams.items():
+        # add user-specific hparams in
+        for k, v in self.experiment_hyperparameters.items():
             args.append(f"--{k} {v}")
-        args.append(f"--experiment_dir {self.experiment_dir}")
-        if self.resubmit_cmd is not None:
-            args.append(f"--{self.resubmit_cmd}")
+
         return " ".join(args)
+
+    def completed(self):
+        raise NotImplementedError("Classes inheriting from BaseExperiment must implement the"
+                                  " `completed` method")
+
+
+class SlurmExperiment(BaseExperiment):
+
+    def __init__(self, experiment_id, slurm_directives, **kwargs):
+
+        super(SlurmExperiment, self).__init__(**kwargs)
+
+        self.experiment_id = experiment_id
+        self.slurm_directives = slurm_directives
+        self.slurm_jobid = None
 
     def __repr__(self):
         return str(self)
@@ -37,8 +81,8 @@ class SlurmExperiment:
     def __getitem__(self, key):
         getattr(self, key)
 
-    def submit(self, hparams):
-        script_path = self._create_slurm_script(hparams)
+    def submit(self, max_iter):
+        script_path = self._create_slurm_script(max_iter)
         self.slurm_jobid = subprocess.check_output(
             f"sbatch --parsable {script_path}", shell=True
         )
@@ -51,12 +95,12 @@ class SlurmExperiment:
             f"sacct --format State -u {os.environ['USER']} -j {self.slurm_jobid}".split()
         )
         job_status = job_status.decode("utf-8")
-        # TODO: will this always work?
+        # TODO: Figure out if this is going to always work for slurm jobs.
         return "COMPLETED" in job_status
 
-    def _create_slurm_script(self, hparams):
-        sub_commands = []
+    def _create_slurm_script(self, max_iter):
 
+        sub_commands = []
         header = [
             "#!/bin/bash\n",
         ]
@@ -66,7 +110,7 @@ class SlurmExperiment:
         command = ["#SBATCH --open-mode=append"]
         sub_commands.extend(command)
 
-        self.job_name_with_version = f"{hparams.project_name}v{self.experiment_id}"
+        self.job_name_with_version = f"{self.project_name}v{self.experiment_id}"
         command = [f"#SBATCH --job-name={self.job_name_with_version}\n"]
         sub_commands.extend(command)
 
@@ -76,25 +120,32 @@ class SlurmExperiment:
         sub_commands.extend(command)
 
         # add any slurm directives that the user specifies. No defaults are given.
-        for cmd in hparams.slurm_directives:
-            command = [
-                f"#SBATCH {cmd}\n",
-            ]
-            sub_commands.extend(command)
+        if self.slurm_directives is not None:
+            for cmd in self.slurm_directives:
+                command = [
+                    f"#SBATCH {cmd}\n",
+                ]
+                sub_commands.extend(command)
 
         # add any commands necessary for running the training script.
-        for cmd in hparams.environment_commands:
+        if self.environment_commands is not None:
+            for cmd in self.environment_commands:
+                command = [
+                    f"{cmd}\n",
+                ]
+                sub_commands.extend(command)
+
+        for envvar, value in self.shopty_environment_mappings.items():
             command = [
-                f"{cmd}\n",
+                f"export {envvar}={value}\n"
             ]
             sub_commands.extend(command)
 
-        # add commands to the experiment object that describe
-        # a) the supervisor directory
-        # b) the process PID
-        self["exp_id"] = "$SLURM_JOB_ID"
+        # create the max_iter environment command
+        command = [f"export {self.shopty_config.max_iter_envvar}={max_iter}\n"]
+        sub_commands.extend(command)
 
-        run_cmd = f"{hparams.run_command} {self}"
+        run_cmd = f"{self.run_command} {self}"
 
         slurm_script = "\n".join(sub_commands)
         slurm_script += "\n" + run_cmd + "\n"
@@ -107,27 +158,11 @@ class SlurmExperiment:
         return slurm_file
 
 
-class BashExperiment:
-    def __init__(self, experiment_dir, max_iter, **hparams):
+class BashExperiment(BaseExperiment):
 
-        self.experiment_dir = experiment_dir
-        self.hparams = hparams
-        self.max_iter = max_iter
-        self.hparams["max_iter"] = max_iter
-        self.resubmit_cmd = None
-
-        os.makedirs(self.experiment_dir, exist_ok=True)
+    def __init__(self, **kwargs):
+        super(BashExperiment, self).__init__(**kwargs)
         self.process = None
-
-    def __str__(self):
-        # TODO: this seems hacky?
-        args = []
-        for k, v in self.hparams.items():
-            args.append(f"--{k} {v}")
-        args.append(f"--experiment_dir {self.experiment_dir}")
-        if self.resubmit_cmd is not None:
-            args.append(f"--{self.resubmit_cmd}")
-        return " ".join(args)
 
     def __repr__(self):
         return str(self)
@@ -138,15 +173,26 @@ class BashExperiment:
     def __getitem__(self, key):
         getattr(self, key)
 
-    def submit(self, hparams):
-        script_path = self._create_bash_script(hparams)
+    def submit(self, max_iter):
+        script_path = self._create_bash_script()
         stdout_path = os.path.join(self.experiment_dir, "log_file.stdout")
+        self.shopty_environment_mappings[self.shopty_config.max_iter_envvar] = str(max_iter)
+        # env: copy the current environment and add the custom shopty env. mappings
         self.process = subprocess.Popen(
-            f"bash {script_path} >> {stdout_path} 2>&1", shell=True
+            f"bash {script_path} >> {stdout_path} 2>&1", shell=True,
+            env=dict(os.environ, **self.shopty_environment_mappings)
         )
         return self.process.pid
 
-    def _create_bash_script(self, hparams):
+    @property
+    def completed(self):
+        poll = self.process.poll()
+        if poll is not None:
+            return True
+        else:
+            return False
+
+    def _create_bash_script(self):
 
         sub_commands = []
         header = [
@@ -154,13 +200,15 @@ class BashExperiment:
         ]
         sub_commands.extend(header)
         # set an outfile.
-        for cmd in hparams.environment_commands:
-            command = [
-                f"{cmd}\n",
-            ]
-            sub_commands.extend(command)
+        if self.environment_commands is not None:
 
-        run_cmd = f"{hparams.run_command} {self}"
+            for cmd in self.environment_commands:
+                command = [
+                    f"{cmd}\n",
+                ]
+                sub_commands.extend(command)
+
+        run_cmd = f"{self.run_command} {self}"
 
         bash_script = "\n".join(sub_commands)
         bash_script += "\n" + run_cmd + "\n"
@@ -183,7 +231,6 @@ class ExperimentGenerator:
 
         for hparam, setting in hparams.hparams.items():
             hrange = HyperRange(hparam, **setting)
-
             if hrange.random:
                 self.stochastics.append(hrange)
             elif len(hrange) > 1:
@@ -217,30 +264,42 @@ class ExperimentGenerator:
 
         if len(self.experiments) != 0:
             # grab a random set of uniform hparams if they are available
-            base_params = self.experiments[
+            sampled_params = self.experiments[
                 int(np.random.rand() * len(self.experiments))
             ]
         else:
             # if the user didn't specify any uniform hparams, just grab the statics
-            base_params = self.base_parameter_set
+            sampled_params = self.base_parameter_set
 
         # now add in the randomly generated hparam
         for stochastic in self.stochastics:
-            base_params[stochastic.name] = stochastic.sample()
+            sampled_params[stochastic.name] = stochastic.sample()
 
         if self.experiment_type == "slurm":
             exp = SlurmExperiment(
-                experiment_dir, max_iter, experiment_id, **base_params
-            )
+                experiment_id=experiment_id,
+                slurm_directives=self.hparams.slurm_directives,
+                run_command=self.hparams.run_command,
+                project_name=self.hparams.project_name,
+                environment_commands=self.hparams.environment_commands,
+                experiment_dir=experiment_dir,
+                experiment_hyperparameters=sampled_params)
+
+            exp.submit(max_iter)
+
         elif self.experiment_type == "bash":
-            exp = BashExperiment(experiment_dir, max_iter, **base_params)
+            exp = BashExperiment(
+                run_command=self.hparams.run_command,
+                project_name=self.hparams.project_name,
+                environment_commands=self.hparams.environment_commands,
+                experiment_dir=experiment_dir,
+                experiment_hyperparameters=sampled_params)
+            exp.submit(max_iter)
+
         else:
             raise ValueError(
                 f"experiment type should be one of [bash,slurm], got {self.experiment_type}"
             )
-
-        exp.submit(self.hparams)
-
         return exp
 
     def __iter__(self):

@@ -1,7 +1,40 @@
 import numpy as np
+import os
 import itertools
 import yaml
 from argparse import ArgumentParser
+
+
+class ShoptyConfig:
+
+    experiment_envvar = "SHOPTY_EXPERIMENT_DIR"
+    results_file = 'results.txt'
+    results_envvar = "SHOPTY_RESULTS_FILE"
+
+    checkpoint_dir_envvar = "SHOPTY_CHECKPOINT_DIR"
+    checkpoint_file_envvar = "SHOPTY_CHECKPOINT_FILE"
+    max_iter_envvar = "SHOPTY_MAX_ITER"
+
+    @property
+    def max_iter(self):
+        return float(os.environ[self.max_iter_envvar])
+
+    @property
+    def experiment_directory(self):
+        return os.environ[self.experiment_envvar]
+
+    @property
+    def results_path(self):
+        return os.environ[self.results_envvar]
+
+    @property
+    def checkpoint_directory(self):
+        return os.environ[self.checkpoint_dir_envvar]
+
+    @property
+    def checkpoint_file(self):
+        return os.environ[self.checkpoint_file_envvar]
+
 
 def shopt_parser():
     ap = ArgumentParser()
@@ -14,7 +47,8 @@ def shopt_parser():
                          '--experiment_dir/checkpoints/')
     return ap
 
-
+# TODO:
+# Add loggers and reloading from checkpoint.
 class HyperRange:
     """
     An object for sampling from ranges of hyperparameters.
