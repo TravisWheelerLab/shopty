@@ -143,6 +143,7 @@ class Config:
     def __init__(self, config_file):
 
         self.params = dct_from_yaml(config_file)
+        self.config_file = config_file
         # self.hparams = self.params["hparams"]
         # self.slurm_directives = self.params["slurm_directives"]
         # self.run_command = self.params["run_command"]

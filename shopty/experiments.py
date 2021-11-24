@@ -258,7 +258,9 @@ class ExperimentGenerator:
                         static_value = ""
                     else:
                         continue
-                else:
+                elif static_value is None:
+                    raise ValueError(f"expected a value for {static_name}, found None. Check {hparams.config_file} "
+                                     "to make sure you've added a value for each parameter.")
                     try:
                         # try to interpret every static as a float.
                         # if this fails, keep it as a string.
