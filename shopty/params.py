@@ -105,11 +105,12 @@ class HyperRange:
         elif self.type == 'float' or self.type is None:
             self.arr = self.arr.astype(np.float)
         else:
-            raise ValueError(f"expected either <int, float, None> for Hyperrange.type, got {self.type}")
+            raise ValueError(f"expected either <int, float, None> for HyperRange.type, got {self.type}")
 
     def _sample_random(self):
         if self.log:
-            return np.exp(self.begin + (self.end - self.begin) * np.random.rand())
+            z = np.logspace(self.begin, self.end)
+            return z[int(np.random.rand()*len(z))]
         else:
             return self.begin + (self.end - self.begin) * np.random.rand()
 
