@@ -91,15 +91,13 @@ if __name__ == "__main__":
     if os.path.isfile(checkpoint_file):
 
         checkpoint = torch.load(checkpoint_file)
-        # This is a weird workaround, but comes from an error in PTL not
-        # setting the model's current epoch.
         last_epoch = checkpoint["epoch"]
         model = model.load_from_checkpoint(
             checkpoint_file, map_location=torch.device("cuda")
         )
 
     # This is because the tensorboard logger will log to experiment_dir/lightning_logs/
-    # if you don't explicity set the name and version to empty strings
+    # if you don't explicitly set the name and version to empty strings
     logger = TensorBoardLogger(experiment_dir, name="", version="")
 
     min_unit = 4  # epochs

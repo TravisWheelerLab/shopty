@@ -36,31 +36,6 @@ class ShoptyConfig:
         return os.environ[self.checkpoint_file_envvar]
 
 
-def shopt_parser():
-    ap = ArgumentParser()
-    ap.add_argument(
-        "--experiment_dir",
-        required=True,
-        type=str,
-        help="directory in which to run the experiment",
-    )
-    ap.add_argument(
-        "--max_iter",
-        type=int,
-        required=True,
-        help="number of steps to run the experiment for",
-    )
-    ap.add_argument(
-        "--load_from_ckpt",
-        action="store_true",
-        help="whether or not to load the model/training state from"
-        "--experiment_dir/checkpoints/",
-    )
-    return ap
-
-
-# TODO:
-# Add loggers and reloading from checkpoint.
 class HyperRange:
     """
     An object for sampling from ranges of hyperparameters.
@@ -77,10 +52,8 @@ class HyperRange:
         random=False,
         log=False,
         num=None,
-        value=None,
     ):
 
-        self.value = value
         self.name = name
 
         self.random = random
@@ -93,18 +66,16 @@ class HyperRange:
         self.log = log
         self.arr = None
 
-        if self.value is None:
+        self.begin = float(begin)
+        self.end = float(end)
 
-            self.begin = float(begin)
-            self.end = float(end)
+        if self.step is not None:
+            self.step = float(step)
 
-            if self.step is not None:
-                self.step = float(step)
+        if self.num is not None:
+            self.num = int(num)
 
-            if self.num is not None:
-                self.num = int(num)
-
-            self._generate_params()
+        self._generate_params()
 
     def _generate_params(self):
         if self.random:
@@ -135,9 +106,7 @@ class HyperRange:
             return self.begin + (self.end - self.begin) * np.random.rand()
 
     def __getitem__(self, idx):
-        if self.value is not None:
-            return self.value
-        elif self.random:
+        if self.random:
             return self._sample_random()
         else:
             return self.arr[idx]
@@ -145,8 +114,6 @@ class HyperRange:
     def sample(self):
         if self.random:
             return self._sample_random()
-        elif self.value is not None:
-            return self.value
         else:
             return self.arr[int(np.random.rand() * len(self.arr))]
 
@@ -157,9 +124,7 @@ class HyperRange:
         return len(self.arr) if self.arr is not None else 1
 
     def __str__(self):
-        if self.value is not None:
-            return f"{self.name}: {self.value}"
-        elif self.random:
+        if self.random:
             return f"stochastic hparam {self.name}: {self._sample_random()}"
         else:
             return f"{self.name}: " + " ".join(map(str, self.arr))
@@ -178,9 +143,10 @@ class Config:
     def __init__(self, config_file):
 
         self.params = dct_from_yaml(config_file)
-        self.hparams = self.params["hparams"]
-        self.slurm_directives = self.params["slurm_directives"]
-        self.run_command = self.params["run_command"]
+        # self.hparams = self.params["hparams"]
+        # self.slurm_directives = self.params["slurm_directives"]
+        # self.run_command = self.params["run_command"]
+        # self.statics = self.params["statics"]
 
         for k, v in self.params.items():
             setattr(self, k, v)

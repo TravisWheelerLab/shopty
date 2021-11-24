@@ -240,17 +240,22 @@ class ExperimentGenerator:
                 self.stochastics.append(hrange)
             elif len(hrange) > 1:
                 self.uniform.append(hrange)
-            else:
-                self.statics.append(hrange)
 
         uniform_cartesian_product = self.generate_cartesian_prod_of_uniform_hparams()
         self.experiments = []
 
         self.base_parameter_set = {}
-        # shove all of the static arguments to the training function into a dict containing
-        # non-mutable hparams # TODO: change this in the config.yaml file.
-        for static in self.statics:
-            self.base_parameter_set[static.name] = static[0]
+
+        if hasattr(self.hparams, "statics"):
+
+            for static_name, static_value in self.hparams.statics.items():
+                try:
+                    # try to interpret every static as a float.
+                    # if this fails, keep it as a string.
+                    static_value = float(static_value)
+                except ValueError:
+                    pass
+                self.base_parameter_set[static_name] = static_value
 
         if uniform_cartesian_product is not None:
 
