@@ -81,8 +81,9 @@ hparams:
     begin: 1
     end: 5
     random: True
-  a_static_hparam:
-    value: 1e-10
+  
+statics:
+  a_static_hparam: 1e-10
 
 slurm_directives:
   - "--partition=gpu"
@@ -110,9 +111,12 @@ hparams:
 ```
 Static variables can be added via
 ```yaml
-hparams:
-  my_static_var:
-    value: 'load_directory'
+statics:
+    my_static_var: 10
+    # or, if you need to specify a type:
+    my_other_static_var:
+        val: 100.0
+        type: 'float'
 ```
 
 #### Slurm directives

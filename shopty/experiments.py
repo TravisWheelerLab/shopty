@@ -249,7 +249,16 @@ class ExperimentGenerator:
         if hasattr(self.hparams, "statics"):
 
             for static_name, static_value in self.hparams.statics.items():
-                if isinstance(static_value, bool):
+                if isinstance(static_value, dict):
+                    value = static_value["val"]
+                    val_type = static_value["type"]
+                    if val_type == 'int':
+                        static_value = int(value)
+                    elif val_type == 'float':
+                        static_value = float(value)
+                    else:
+                        raise ValueError(f"type must be on of <int, float>, got {val_type}")
+                elif isinstance(static_value, bool):
                     # for boolean flags (things like --apply_mask in your training script)
                     # set the value to "" if it's true; otherwise
                     # skip it, since we're not passing it in. This works with an argument
@@ -261,6 +270,7 @@ class ExperimentGenerator:
                 elif static_value is None:
                     raise ValueError(f"expected a value for {static_name}, found None. Check {hparams.config_file} "
                                      "to make sure you've added a value for each parameter.")
+                else:
                     try:
                         # try to interpret every static as a float.
                         # if this fails, keep it as a string.

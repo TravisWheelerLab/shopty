@@ -52,6 +52,7 @@ class HyperRange:
         random=False,
         log=False,
         num=None,
+        type=None,
     ):
 
         self.name = name
@@ -68,6 +69,7 @@ class HyperRange:
 
         self.begin = float(begin)
         self.end = float(end)
+        self.type = type
 
         if self.step is not None:
             self.step = float(step)
@@ -98,6 +100,12 @@ class HyperRange:
                 self.arr = np.linspace(self.begin, self.end, self.num)
             else:
                 raise ValueError(f"specify either step or num for argument {self.name}")
+        if self.type == 'int':
+            self.arr = self.arr.astype(np.int)
+        elif self.type == 'float' or self.type is None:
+            self.arr = self.arr.astype(np.float)
+        else:
+            raise ValueError(f"expected either <int, float, None> for Hyperrange.type, got {self.type}")
 
     def _sample_random(self):
         if self.log:
