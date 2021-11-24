@@ -249,12 +249,22 @@ class ExperimentGenerator:
         if hasattr(self.hparams, "statics"):
 
             for static_name, static_value in self.hparams.statics.items():
-                try:
-                    # try to interpret every static as a float.
-                    # if this fails, keep it as a string.
-                    static_value = float(static_value)
-                except ValueError:
-                    pass
+                if isinstance(static_value, bool):
+                    # for boolean flags (things like --apply_mask in your training script)
+                    # set the value to "" if it's true; otherwise
+                    # skip it, since we're not passing it in. This works with an argument
+                    # parser's action="store_true" argument in add_argument.
+                    if static_value:
+                        static_value = ""
+                    else:
+                        continue
+                else:
+                    try:
+                        # try to interpret every static as a float.
+                        # if this fails, keep it as a string.
+                        static_value = float(static_value)
+                    except ValueError:
+                        pass
                 self.base_parameter_set[static_name] = static_value
 
         if uniform_cartesian_product is not None:
