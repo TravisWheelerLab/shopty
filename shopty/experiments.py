@@ -252,12 +252,14 @@ class ExperimentGenerator:
                 if isinstance(static_value, dict):
                     value = static_value["val"]
                     val_type = static_value["type"]
-                    if val_type == 'int':
+                    if val_type == "int":
                         static_value = int(value)
-                    elif val_type == 'float':
+                    elif val_type == "float":
                         static_value = float(value)
                     else:
-                        raise ValueError(f"type must be on of <int, float>, got {val_type}")
+                        raise ValueError(
+                            f"type must be on of <int, float>, got {val_type}"
+                        )
                 elif isinstance(static_value, bool):
                     # for boolean flags (things like --apply_mask in your training script)
                     # set the value to "" if it's true; otherwise
@@ -268,8 +270,10 @@ class ExperimentGenerator:
                     else:
                         continue
                 elif static_value is None:
-                    raise ValueError(f"expected a value for {static_name}, found None. Check {hparams.config_file} "
-                                     "to make sure you've added a value for each parameter.")
+                    raise ValueError(
+                        f"expected a value for {static_name}, found None. Check {hparams.config_file} "
+                        "to make sure you've added a value for each parameter."
+                    )
                 else:
                     try:
                         # try to interpret every static as a float.

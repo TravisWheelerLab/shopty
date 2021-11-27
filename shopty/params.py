@@ -100,17 +100,19 @@ class HyperRange:
                 self.arr = np.linspace(self.begin, self.end, self.num)
             else:
                 raise ValueError(f"specify either step or num for argument {self.name}")
-        if self.type == 'int':
+        if self.type == "int":
             self.arr = self.arr.astype(np.int)
-        elif self.type == 'float' or self.type is None:
+        elif self.type == "float" or self.type is None:
             self.arr = self.arr.astype(np.float)
         else:
-            raise ValueError(f"expected either <int, float, None> for HyperRange.type, got {self.type}")
+            raise ValueError(
+                f"expected either <int, float, None> for HyperRange.type, got {self.type}"
+            )
 
     def _sample_random(self):
         if self.log:
             z = np.logspace(self.begin, self.end)
-            return z[int(np.random.rand()*len(z))]
+            return z[int(np.random.rand() * len(z))]
         else:
             return self.begin + (self.end - self.begin) * np.random.rand()
 
@@ -150,13 +152,8 @@ def dct_from_yaml(yaml_file):
 
 class Config:
     def __init__(self, config_file):
-
         self.params = dct_from_yaml(config_file)
         self.config_file = config_file
-        # self.hparams = self.params["hparams"]
-        # self.slurm_directives = self.params["slurm_directives"]
-        # self.run_command = self.params["run_command"]
-        # self.statics = self.params["statics"]
 
         for k, v in self.params.items():
             setattr(self, k, v)
