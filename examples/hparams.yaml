@@ -1,6 +1,6 @@
 project_name: 'test'
-run_command: "python3 /Users/mac/share/shopty/examples/train.py"
-project_dir: "jobname/"
+run_command: "python3 train.py"
+project_dir: "test_shopty/"
 monitor: "min"
 poll_interval: 10
 
@@ -10,31 +10,11 @@ hparams:
     end: -1
     random: True
     log: True
-  binary_indicator:
-    begin: 0
-    end: 2
-    step: 1
-    type: int
-  custom_hparam:
-    begin: 1
-    end: 5
-    step: 2
-  custom_hparam_2:
-    begin: 1
-    end: 5
-    step: 5
-    random: True
-
-statics:
-  static_1: 3
-  static_2: false
-
 
 slurm_directives:
-  - "--partition=wheeler_lab_gpu"
+  - "--partition=<your_gpu_partition>"
   - "--gres=gpu:1"
 
 environment_commands:
-  - 'source ~/anaconda/bin/activate'
-  - 'conda activate beetles'
+#  - 'source <your_conda_env>'
 

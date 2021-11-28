@@ -14,14 +14,6 @@ cd shopty && flit install
 ```bash
 pip install shopty
 ```
-### hyperband on a slurm cluster
-```bash
-shopty hyperband --config_file my_config.yaml --supervisor slurm
-```
-### run 20 random hyperparameter configs each for 100 iterations
-```bash
-shopty random --config_file my_config.yaml --supervisor slurm --max_iter 100 --n_experiments 20
-```
 
 A non-cli example is [here](./examples/optim.py).
 
@@ -48,18 +40,15 @@ See a simple example [here](./examples/train.py). A neural network example is
 
 Supervisors communicate with experiments via environment variables. Your custom training code must know how to deal with
 some shopty-specific use cases. In particular, it must a) run the code for `max_iter` iterations, b) reload the training 
-state from a checkpoint file, and c) write the result post-training to a results file. The `max_iter` variable is an
-experiment-specific environment variable, as is the checkpoint file's name and the results file's name.
-
-I've already written the code for this for [pytorch lightning](https://www.pytorchlightning.ai/) (PTL).
-I highly recommend using PTL, as it does a lot of useful things for you under the hood.
+state from a checkpoint file, and c) write the result post-training to a results file. The checkpoint filepath, results filepath,
+and maximum iteration to run for are all provided by shopty. The python files in the examples/ directory show how to achieve
+(a, b, and c) with a simple non-nn example and a [Pytorch Lightning](https://pytorchlightning.ai) neural network example.
 
 ### How to define hyperparameters and slurm directives
 
 We use a .yaml file to define hyperparameters for training models as well as other commands you want to run to set up
-the training environment.
-The .yaml file must have the following structure:
-
+the training environment. See after the yaml markup for header-specific information.
+An example .yaml file:
 ```yaml
 project_name: 'your_project_name'
 run_command: "python3 my_cool_script.py"
@@ -96,9 +85,16 @@ environment_commands:
 
 The `run_command` is how shopty runs your program. Generated hyperparameters are passed in to the `run_command` via the
 command line in no particular order. For example, if you want to tune the learning rate of the model
-in `my_cool_script.py`, `my_cool_script.py` must accept a `--learning_rate <learning_rate>` argument.
+in `my_cool_script.py`, `my_cool_script.py` must accept a `--learning_rate` argument.
+#### project_name, project_dir, monitor, and poll_interval
+`project name` is what your experiments will be titled.
+`project_dir` is where output and logs will be saved.
+You can minimize or maximize metrics with the `monitor` field - `'min'` and `'max'` are supported.
+`poll_interval` is how often shopty polls processes for completion in seconds.
 
-Notice how the `hparams` header has two levels of indentation: one for the name of hyperparameter, and the next for the
+#### hparams
+
+The `hparams` header has two levels of indentation: one for the name of hyperparameter, and the next for the
 beginning and end of the range over which to sample from. There are three required elements for each hparam:
 `begin, end, and <random or step>`. The hyperparameter can either be sampled randomly between the interval `[begin, end)`
 or iterated over from `begin` to `end` with step `step`. Binary variables can be added to the project with
@@ -109,7 +105,20 @@ hparams:
     end: 2
     step: 1
 ```
-Static variables can be added via
+shopty automatically assumes hyperparameters are floats, but you can add a type with
+```yaml
+hparams:
+  my_int_hparam:
+    begin: -10
+    end: 10
+    step: 1
+    type: 'int'
+```
+Options: `'float' 'int'`. String hyperparameters are not supported.
+
+#### statics
+
+Static variables can be added under the static header:
 ```yaml
 statics:
     my_static_var: 10
@@ -126,3 +135,4 @@ in each slurm submission script.
 
 #### Environment commands
 These are arbitrary commands that you want to run before the `run_command` is called in the generated script.
+
