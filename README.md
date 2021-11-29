@@ -81,6 +81,16 @@ slurm_directives:
 environment_commands:
   - "conda activate my_env"
 ```
+
+By default all hyperparameters will be interpreted as floats. Add a type: field in the hyperparameter definition to specify types.
+```yaml
+hparam_2:
+   begin: 100
+   end: 300
+   step: 40
+   type: 'int' # or 'float'
+```
+
 #### run_command
 
 The `run_command` is how shopty runs your program. Generated hyperparameters are passed in to the `run_command` via the
