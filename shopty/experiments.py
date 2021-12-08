@@ -234,12 +234,13 @@ class ExperimentGenerator:
         self.hparams = hparams
         self.experiment_type = experiment_type
 
-        for hparam, setting in hparams.hparams.items():
-            hrange = HyperRange(hparam, **setting)
-            if hrange.random:
-                self.stochastics.append(hrange)
-            elif len(hrange) > 1:
-                self.uniform.append(hrange)
+        if hparams.hparams is not None:
+            for hparam, setting in hparams.hparams.items():
+                hrange = HyperRange(hparam, **setting)
+                if hrange.random:
+                    self.stochastics.append(hrange)
+                elif len(hrange) > 1:
+                    self.uniform.append(hrange)
 
         uniform_cartesian_product = self.generate_cartesian_prod_of_uniform_hparams()
         self.experiments = []

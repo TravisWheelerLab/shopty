@@ -55,7 +55,14 @@ def hyperband(supervisor, max_iter=81, eta=3, n_max=None):
                 supervisor.resubmit_experiments(max_iter=r_i)
             # this is a blocking method. It'll monitor whether or not the experiments are done.
             # When they are done, it'll resubmit the best-performing ones.
-            supervisor.watch_experiments(n_best_to_keep=int(n_i / eta))
-            print(
-                f"Hyperband inner loop {i} finished. Keeping {int(n_i / eta)} experiments."
-            )
+            if int(n_i / eta) == 0:
+                print(
+                    f"Hyperband inner loop {i} finished. Keeping 0 experiments and going on to "
+                    f"the next outer loop."
+                )
+                break
+            else:
+                supervisor.watch_experiments(n_best_to_keep=int(n_i / eta))
+                print(
+                    f"Hyperband inner loop {i} finished. Keeping {int(n_i / eta)} experiments."
+                )
