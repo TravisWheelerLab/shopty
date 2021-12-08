@@ -15,7 +15,9 @@ cd shopty && flit install
 pip install shopty
 ```
 
+Run the examples with commands [here](./examples/README.md).
 A non-cli example is [here](./examples/optim.py).
+
 
 ### What is the purpose of this tool?
 
