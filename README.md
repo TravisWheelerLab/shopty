@@ -148,3 +148,7 @@ in each slurm submission script.
 #### Environment commands
 These are arbitrary commands that you want to run before the `run_command` is called in the generated script.
 
+### Shopty isn't working on slurm. How do I debug this?
+shopty generates slurm scripts to run each experiment. Navigate to an experiment's directory, request an interactive node, and run the slurm script 
+with `bash slurm_script.sh`. 
+
