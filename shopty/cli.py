@@ -38,6 +38,13 @@ def create_parser():
         help="path to the shopty config file",
         required=True,
     )
+    hyperband_parser.add_argument(
+        "-b",
+        "--bracket",
+        default=None,
+        help="hyperband brackets to run (count starts from 0). Specifying this will run hyperband brackets up"
+        " to and including bracket --bracket.",
+    )
 
     random_parser = subparsers.add_parser(name="random", add_help=False)
     random_parser.add_argument(
@@ -87,10 +94,19 @@ def main():
 
             x = CPUSupervisor(args.config_file)
         else:
-            print(f"unrecognized arguments: {args.supervisor}")
+            print(
+                f"unrecognized argument for supervisor. Got {args.supervisor}, "
+                f"expected one of slurm, cpu."
+            )
             parser.print_help()
             exit(1)
-        hyperband(x, max_iter=args.max_iter, eta=args.eta, n_max=args.n_max)
+        hyperband(
+            x,
+            max_iter=args.max_iter,
+            eta=args.eta,
+            n_max=args.n_max,
+            bracket=int(args.bracket) if args.bracket is not None else None,
+        )
 
     elif args.command == "random":
         from shopty import random

@@ -10,7 +10,7 @@ def random(supervisor, n_trials, max_iter):
         supervisor.submit_new_experiment(experiment_directory="", max_iter=max_iter)
 
 
-def hyperband(supervisor, max_iter=81, eta=3, n_max=None):
+def hyperband(supervisor, max_iter=81, eta=3, n_max=None, bracket=None):
     logeta = lambda x: np.log(x) / np.log(eta)
     s_max = int(
         logeta(max_iter)
@@ -19,6 +19,7 @@ def hyperband(supervisor, max_iter=81, eta=3, n_max=None):
         s_max + 1
     ) * max_iter  # total number of iterations (without reuse) per execution of Succesive Halving (n,r)
 
+    bracket_count = 0
     for s in reversed(range(s_max + 1)):
         n = int(
             np.ceil(B / max_iter / (s + 1)) * eta ** s
@@ -66,3 +67,10 @@ def hyperband(supervisor, max_iter=81, eta=3, n_max=None):
                 print(
                     f"Hyperband inner loop {i} finished. Keeping {int(n_i / eta)} experiments."
                 )
+
+        if bracket is not None:
+            if bracket_count == bracket:
+                print(f"bracket number {bracket_count} done. Exiting.")
+                break
+            else:
+                bracket_count += 1
