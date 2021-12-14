@@ -3,6 +3,7 @@ import os
 import itertools
 import yaml
 from argparse import ArgumentParser
+from typing import Union
 
 
 class ShoptyConfig:
@@ -16,24 +17,24 @@ class ShoptyConfig:
     max_iter_envvar = "SHOPTY_MAX_ITER"
 
     @property
-    def max_iter(self):
-        return float(os.environ[self.max_iter_envvar])
+    def max_iter(self) -> Union[None, float]:
+        return float(os.environ.get(self.max_iter_envvar))
 
     @property
-    def experiment_directory(self):
-        return os.environ[self.experiment_envvar]
+    def experiment_directory(self) -> Union[None, str]:
+        return os.environ.get(self.experiment_envvar)
 
     @property
-    def results_path(self):
-        return os.environ[self.results_envvar]
+    def results_path(self) -> Union[None, str]:
+        return os.environ.get(self.results_envvar)
 
     @property
-    def checkpoint_directory(self):
-        return os.environ[self.checkpoint_dir_envvar]
+    def checkpoint_directory(self) -> Union[None, str]:
+        return os.environ.get(self.checkpoint_dir_envvar)
 
     @property
-    def checkpoint_file(self):
-        return os.environ[self.checkpoint_file_envvar]
+    def checkpoint_file(self) -> Union[None, str]:
+        return os.environ.get(self.checkpoint_file_envvar)
 
 
 class HyperRange:
@@ -119,14 +120,12 @@ class HyperRange:
     def __getitem__(self, idx):
         if self.random:
             return self._sample_random()
-        else:
-            return self.arr[idx]
+        return self.arr[idx]
 
     def sample(self):
         if self.random:
             return self._sample_random()
-        else:
-            return self.arr[int(np.random.rand() * len(self.arr))]
+        return self.arr[int(np.random.rand() * len(self.arr))]
 
     def __iter__(self):
         return iter(self.arr)
