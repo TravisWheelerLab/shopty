@@ -6,7 +6,7 @@ def create_parser():
 
     subparsers = ap.add_subparsers(title="algorithms", dest="command")
 
-    hyperband_parser = subparsers.add_parser(name="hyperband", add_help=False)
+    hyperband_parser = subparsers.add_parser(name="hyperband")
     hyperband_parser.add_argument(
         "-m",
         "--max_iter",
@@ -46,7 +46,7 @@ def create_parser():
         " to and including bracket --bracket.",
     )
 
-    random_parser = subparsers.add_parser(name="random", add_help=False)
+    random_parser = subparsers.add_parser(name="random")
     random_parser.add_argument(
         "-m",
         "--max_iter",
