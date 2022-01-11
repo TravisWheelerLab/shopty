@@ -42,8 +42,7 @@ def create_parser():
         "-b",
         "--bracket",
         default=None,
-        help="hyperband brackets to run (count starts from 0). Specifying this will run hyperband brackets up"
-        " to and including bracket --bracket.",
+        help="hyperband brackets to run (count starts from 0). Specifying this will run hyperband bracket <b>",
     )
 
     random_parser = subparsers.add_parser(name="random")

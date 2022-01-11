@@ -35,6 +35,11 @@ def hyperband(supervisor, max_iter=81, eta=3, n_max=None, bracket=None):
         )
 
         loop_directory = f"{s}_{n}_{r}"
+        if bracket_count != bracket:
+            bracket_count += 1
+            continue
+        bracket_count += 1
+
         # the supervisor has a project directory and each outer loop
         # of hyperband has a subdirectory. Each experiment in each outer
         # loop has its own directory
@@ -67,10 +72,3 @@ def hyperband(supervisor, max_iter=81, eta=3, n_max=None, bracket=None):
                 print(
                     f"Hyperband inner loop {i} finished. Keeping {int(n_i / eta)} experiments."
                 )
-
-        if bracket is not None:
-            if bracket_count == bracket:
-                print(f"bracket number {bracket_count} done. Exiting.")
-                break
-            else:
-                bracket_count += 1
