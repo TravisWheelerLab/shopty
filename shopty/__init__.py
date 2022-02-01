@@ -1,7 +1,7 @@
 """
 shopty is a tool for tuning hyperparameters on your computer or slurm-managed clusters.
 """
-__version__ = "0.0.3"
+from ._version import __version__
 
 from .experiments import *
 from .supervisors import *
