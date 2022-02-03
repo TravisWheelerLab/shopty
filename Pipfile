@@ -10,10 +10,11 @@ numpy = ">=1.0.0"
 
 [dev-packages]
 black = "*"
-mypy = "*"
-ipython = "*"
 flit = "*"
+ipython = "*"
+mypy = "*"
 pylint = "*"
+pytest = "*"
 types-PyYAML = "*"
 
 [requires]

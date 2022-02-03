@@ -26,3 +26,12 @@ Home = "https://github.com/colligant/shopty"
 [project.scripts]
 shopty = "shopty:cli.main"
 
+[tool.flit.sdist]
+exclude = [
+    "examples/",
+    "tool/",
+    "Dockerfile*",
+    ".gitignore",
+    ".github",
+]
+
