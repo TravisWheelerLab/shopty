@@ -7,11 +7,22 @@ name = "shopty"
 authors = [{name = "Thomas Colligan", email = "thomas.colligan@umontana.edu"}]
 readme = "README.md"
 license = {file = "LICENSE"}
-classifiers = ["License :: OSI Approved :: MIT License"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dynamic = ["version", "description"]
+requires-python = ">=3.9"
+dependencies = [
+    "pytorch-lightning >=1.5.0",
+    "pyyaml >=6.0.0",
+    "numpy >=1.0.0",
+]
 
 [project.urls]
 Home = "https://github.com/colligant/shopty"
 
 [project.scripts]
 shopty = "shopty:cli.main"
+
