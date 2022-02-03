@@ -22,7 +22,7 @@ def hyperband(supervisor, max_iter=81, eta=3, n_max=None, bracket=None):
     bracket_count = 0
     for s in reversed(range(s_max + 1)):
         n = int(
-            np.ceil(B / max_iter / (s + 1)) * eta ** s
+            np.ceil(B / max_iter / (s + 1)) * eta**s
         )  # initial number of configurations
         if n_max is not None:
             n = n_max
@@ -46,7 +46,7 @@ def hyperband(supervisor, max_iter=81, eta=3, n_max=None, bracket=None):
         first = True
         for i in range(s + 1):
             n_i = int(n * eta ** (-i))  # submit N experiments
-            r_i = int(r * eta ** i)  # and run for R iterations.
+            r_i = int(r * eta**i)  # and run for R iterations.
             if first:
                 for _ in range(n_i):
                     supervisor.submit_new_experiment(
