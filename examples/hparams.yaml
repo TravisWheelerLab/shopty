@@ -1,5 +1,5 @@
 project_name: 'test'
-run_command: "python3 train.py"
+run_command: "python3 examples/train.py"
 project_dir: "test_shopty/"
 monitor: "min"
 poll_interval: 10

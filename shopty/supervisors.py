@@ -52,7 +52,6 @@ class Supervisor:
                     finished += 1
             time.sleep(self.poll_interval)
             if finished == len(self.running_experiments):
-                print("Hyperband loop finished. Culling poorly-performing experiments.")
                 break
 
         losses = []
