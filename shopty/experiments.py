@@ -228,7 +228,6 @@ class BashExperiment(BaseExperiment):
 class ExperimentGenerator:
     def __init__(self, hparams: Config, experiment_type: str) -> None:
 
-        self.statics = []
         self.stochastics = []
         self.uniform = []
         self.hparams = hparams

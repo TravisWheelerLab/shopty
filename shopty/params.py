@@ -18,7 +18,11 @@ class ShoptyConfig:
 
     @property
     def max_iter(self) -> Union[None, float]:
-        return float(os.environ.get(self.max_iter_envvar))
+        _max_iter = os.environ.get(self.max_iter_envvar)
+        if isinstance(_max_iter, str):
+            return float(_max_iter)
+        else:
+            return None
 
     @property
     def experiment_directory(self) -> Union[None, str]:
@@ -153,6 +157,13 @@ class Config:
     def __init__(self, config_file):
         self.params = dct_from_yaml(config_file)
         self.config_file = config_file
-
+        self.statics = None
+        self.hparams = None
         for k, v in self.params.items():
             setattr(self, k, v)
+
+        if self.hparams is None:
+            raise ValueError("Need to specify hparams header in .yaml config file.")
+
+        if self.statics is None:
+            raise ValueError("Need to specify statics header in .yaml config file.")
